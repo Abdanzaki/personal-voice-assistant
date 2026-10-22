@@ -118,6 +118,7 @@ PYTHONPATH=.. uvicorn main:app --reload --port 8000
   export GEMINI_API_KEY="your-gemini-api-key"
   ```
   If unset, the backend runs gracefully in unconfigured mode and advises the user to configure the key, while all local and external intents continue to work seamlessly.
+- `CORS_ORIGINS` (*optional*): JSON array of allowed frontend origins (e.g. `CORS_ORIGINS='["https://my-app.vercel.app"]'`), set it on the backend host in production.
 
 ---
 

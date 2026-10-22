@@ -1,7 +1,13 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.main import app, UNCONFIGURED_REPLY, ERROR_REPLY
+from backend.main import (
+    app,
+    UNCONFIGURED_REPLY,
+    ERROR_REPLY,
+    DEFAULT_CORS_ORIGINS,
+    get_cors_origins,
+)
 from backend.ai_service import generate_reply, FALLBACK_MODELS
 
 
@@ -156,3 +162,111 @@ def test_cors_headers_allowed_origin(client):
     )
     assert response.status_code == 200
     assert response.headers.get("access-control-allow-origin") == "http://localhost:5173"
+
+
+def test_cors_headers_disallowed_origin_by_default(client):
+    response = client.options(
+        "/api/chat",
+        headers={
+            "Origin": "https://unauthorized-site.com",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert response.headers.get("access-control-allow-origin") is None
+
+
+# Direct tests for get_cors_origins() resolution logic
+def test_get_cors_origins_when_unset(monkeypatch):
+    monkeypatch.delenv("CORS_ORIGINS", raising=False)
+    assert get_cors_origins() == DEFAULT_CORS_ORIGINS
+
+
+def test_get_cors_origins_when_empty_string(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", "")
+    assert get_cors_origins() == DEFAULT_CORS_ORIGINS
+
+
+def test_get_cors_origins_when_whitespace_only(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", "   ")
+    assert get_cors_origins() == DEFAULT_CORS_ORIGINS
+
+
+def test_get_cors_origins_when_invalid_json(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", "invalid-json")
+    assert get_cors_origins() == DEFAULT_CORS_ORIGINS
+
+
+def test_get_cors_origins_when_not_a_json_list(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", '{"origin": "https://example.com"}')
+    assert get_cors_origins() == DEFAULT_CORS_ORIGINS
+
+
+def test_get_cors_origins_when_list_contains_non_strings(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", '["https://example.com", 123]')
+    assert get_cors_origins() == DEFAULT_CORS_ORIGINS
+
+
+def test_get_cors_origins_when_valid_json_list(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", '["https://my-app.vercel.app"]')
+    assert get_cors_origins() == ["https://my-app.vercel.app"]
+
+
+def test_get_cors_origins_multiple_origins(monkeypatch):
+    monkeypatch.setenv(
+        "CORS_ORIGINS",
+        '["https://my-app.vercel.app", "https://staging.vercel.app"]',
+    )
+    assert get_cors_origins() == [
+        "https://my-app.vercel.app",
+        "https://staging.vercel.app",
+    ]
+
+
+# TestClient preflight / OPTIONS verification with reloaded app honoring CORS_ORIGINS
+def test_cors_configured_origins_honored_via_middleware(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", '["https://my-app.vercel.app"]')
+    import importlib
+    import backend.main
+
+    reloaded_module = importlib.reload(backend.main)
+    custom_client = TestClient(reloaded_module.app)
+    try:
+        # Configured origin is honored
+        response = custom_client.options(
+            "/api/chat",
+            headers={
+                "Origin": "https://my-app.vercel.app",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+        assert response.status_code == 200
+        assert response.headers.get("access-control-allow-origin") == "https://my-app.vercel.app"
+
+        # Localhost regex is still active and honored
+        localhost_response = custom_client.options(
+            "/api/chat",
+            headers={
+                "Origin": "http://localhost:5173",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+        assert localhost_response.status_code == 200
+        assert localhost_response.headers.get("access-control-allow-origin") == "http://localhost:5173"
+
+        # Unconfigured origin is disallowed
+        disallowed_response = custom_client.options(
+            "/api/chat",
+            headers={
+                "Origin": "https://random-site.com",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+        assert disallowed_response.headers.get("access-control-allow-origin") is None
+    finally:
+        monkeypatch.delenv("CORS_ORIGINS", raising=False)
+        importlib.reload(backend.main)
+
