@@ -13,7 +13,7 @@ export function Orb({ state = 'idle', onClick }) {
   const isThinking = state === 'thinking'
 
   return (
-    <div className="flex flex-col items-center justify-center select-none py-4">
+    <div className="flex flex-col items-center justify-center select-none py-2 sm:py-4">
       {/* Container for Orb & Rings */}
       <div
         onClick={onClick}
@@ -21,6 +21,7 @@ export function Orb({ state = 'idle', onClick }) {
         title={isListening ? 'Click to stop listening' : 'Click to start listening'}
         role="button"
         tabIndex={0}
+        aria-label={isListening ? 'Stop listening' : 'Start listening'}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
@@ -31,16 +32,16 @@ export function Orb({ state = 'idle', onClick }) {
         {/* Radiating Rings for Listening State */}
         {isListening && (
           <>
-            <div className="absolute w-44 h-44 rounded-full border border-cyan-400/40 animate-ring-1 pointer-events-none" />
-            <div className="absolute w-44 h-44 rounded-full border border-cyan-400/30 animate-ring-2 pointer-events-none" />
-            <div className="absolute w-44 h-44 rounded-full border border-cyan-400/20 animate-ring-3 pointer-events-none" />
+            <div className="absolute w-40 h-40 sm:w-48 sm:h-48 rounded-full border border-cyan-400/40 animate-ring-1 pointer-events-none" />
+            <div className="absolute w-40 h-40 sm:w-48 sm:h-48 rounded-full border border-cyan-400/30 animate-ring-2 pointer-events-none" />
+            <div className="absolute w-40 h-40 sm:w-48 sm:h-48 rounded-full border border-cyan-400/20 animate-ring-3 pointer-events-none" />
           </>
         )}
 
         {/* Ambient Glow for Speaking or Thinking State */}
         {(isSpeaking || isThinking) && (
           <div
-            className={`absolute w-48 h-48 rounded-full pointer-events-none transition-all duration-500 ${
+            className={`absolute w-40 h-40 sm:w-48 sm:h-48 rounded-full pointer-events-none transition-all duration-500 ${
               isThinking ? 'bg-cyan-500/25 blur-2xl animate-pulse' : 'bg-cyan-500/15 blur-xl'
             }`}
           />
@@ -48,7 +49,7 @@ export function Orb({ state = 'idle', onClick }) {
 
         {/* The Core Orb Sphere */}
         <div
-          className={`relative w-40 h-40 sm:w-48 sm:h-48 rounded-full bg-zinc-950 flex items-center justify-center transition-all duration-300
+          className={`relative w-36 h-36 sm:w-44 sm:h-44 md:w-48 md:h-48 rounded-full bg-zinc-950 flex items-center justify-center transition-all duration-300
             ${
               isListening
                 ? 'border-2 border-cyan-400 animate-orb-listening'
@@ -67,14 +68,14 @@ export function Orb({ state = 'idle', onClick }) {
           {/* Orb Center Content according to state */}
           {isSpeaking ? (
             /* Speaking State: Waveform audio bars */
-            <div className="flex items-center justify-center gap-1.5 h-14 z-10">
-              <span className="w-1.5 bg-cyan-400 rounded-full wave-bar" style={{ height: '32px', animationDelay: '0.1s' }} />
-              <span className="w-1.5 bg-cyan-300 rounded-full wave-bar" style={{ height: '44px', animationDelay: '0.35s' }} />
-              <span className="w-1.5 bg-cyan-400 rounded-full wave-bar" style={{ height: '24px', animationDelay: '0.0s' }} />
-              <span className="w-1.5 bg-cyan-200 rounded-full wave-bar" style={{ height: '50px', animationDelay: '0.45s' }} />
-              <span className="w-1.5 bg-cyan-400 rounded-full wave-bar" style={{ height: '38px', animationDelay: '0.2s' }} />
-              <span className="w-1.5 bg-cyan-300 rounded-full wave-bar" style={{ height: '46px', animationDelay: '0.5s' }} />
-              <span className="w-1.5 bg-cyan-400 rounded-full wave-bar" style={{ height: '26px', animationDelay: '0.15s' }} />
+            <div className="flex items-center justify-center gap-1.5 h-12 sm:h-14 z-10">
+              <span className="w-1.5 bg-cyan-400 rounded-full wave-bar" style={{ height: '28px', animationDelay: '0.1s' }} />
+              <span className="w-1.5 bg-cyan-300 rounded-full wave-bar" style={{ height: '40px', animationDelay: '0.35s' }} />
+              <span className="w-1.5 bg-cyan-400 rounded-full wave-bar" style={{ height: '22px', animationDelay: '0.0s' }} />
+              <span className="w-1.5 bg-cyan-200 rounded-full wave-bar" style={{ height: '46px', animationDelay: '0.45s' }} />
+              <span className="w-1.5 bg-cyan-400 rounded-full wave-bar" style={{ height: '34px', animationDelay: '0.2s' }} />
+              <span className="w-1.5 bg-cyan-300 rounded-full wave-bar" style={{ height: '42px', animationDelay: '0.5s' }} />
+              <span className="w-1.5 bg-cyan-400 rounded-full wave-bar" style={{ height: '24px', animationDelay: '0.15s' }} />
             </div>
           ) : isListening ? (
             /* Listening State: Active glowing core dot with pulse */
@@ -100,7 +101,7 @@ export function Orb({ state = 'idle', onClick }) {
       </div>
 
       {/* State Label Badge */}
-      <div className="mt-4 flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 text-xs font-mono tracking-wider">
+      <div className="mt-3 sm:mt-4 flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 text-xs font-mono tracking-wider">
         <span
           className={`w-2 h-2 rounded-full ${
             isListening
@@ -119,7 +120,7 @@ export function Orb({ state = 'idle', onClick }) {
             ? 'Speaking...'
             : isThinking
             ? 'Thinking...'
-            : 'Standby'}
+            : 'Idle'}
         </span>
       </div>
     </div>

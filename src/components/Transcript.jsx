@@ -20,9 +20,9 @@ export function Transcript({
   }, [messages, interimText, thinking])
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-zinc-950/70 rounded-xl border border-zinc-800/80 overflow-hidden shadow-2xl">
+    <div className="flex flex-col flex-1 min-h-[260px] sm:min-h-[320px] bg-zinc-950/70 rounded-xl border border-zinc-800/80 overflow-hidden shadow-2xl">
       {/* Header bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800/80 bg-zinc-900/40">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 border-b border-zinc-800/80 bg-zinc-900/40 shrink-0">
         <div className="flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
           <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
@@ -38,7 +38,8 @@ export function Transcript({
         {messages.length > 0 && (
           <button
             onClick={onClear}
-            className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors px-2 py-0.5 rounded hover:bg-zinc-800/60"
+            aria-label="Clear conversation history"
+            className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors px-2 py-0.5 rounded hover:bg-zinc-800/60 cursor-pointer"
             title="Clear conversation history"
           >
             Clear
@@ -49,12 +50,12 @@ export function Transcript({
       {/* Messages list */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-3.5 text-sm font-sans scroll-smooth"
+        className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 text-sm font-sans scroll-smooth"
       >
         {messages.length === 0 && !interimText && !thinking && (
-          <div className="h-full min-h-[160px] flex flex-col items-center justify-center text-center p-6 text-zinc-500">
+          <div className="h-full min-h-[140px] flex flex-col items-center justify-center text-center p-4 text-zinc-500">
             <svg
-              className="w-8 h-8 mb-2 text-zinc-600"
+              className="w-7 h-7 mb-2 text-zinc-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -97,7 +98,7 @@ export function Transcript({
               </div>
 
               <div
-                className={`max-w-[85%] rounded-lg px-3.5 py-2.5 leading-relaxed text-sm ${
+                className={`max-w-[88%] sm:max-w-[85%] rounded-lg px-3 py-2 leading-relaxed text-sm break-words ${
                   isUser
                     ? 'bg-zinc-800/90 text-zinc-100 border border-zinc-700/50'
                     : 'bg-zinc-900/90 text-zinc-200 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.05)]'
@@ -115,7 +116,7 @@ export function Transcript({
             <div className="text-[11px] font-semibold tracking-wide text-zinc-400 mb-1 px-1">
               You (speaking...)
             </div>
-            <div className="max-w-[85%] rounded-lg px-3.5 py-2 bg-zinc-800/50 border border-dashed border-cyan-500/40 text-zinc-300 italic text-sm">
+            <div className="max-w-[88%] sm:max-w-[85%] rounded-lg px-3 py-2 bg-zinc-800/50 border border-dashed border-cyan-500/40 text-zinc-300 italic text-sm break-words">
               {interimText}
             </div>
           </div>
@@ -127,7 +128,7 @@ export function Transcript({
             <div className="text-[11px] font-semibold tracking-wide text-cyan-400 mb-1 px-1">
               {ASSISTANT_NAME}
             </div>
-            <div className="max-w-[85%] rounded-lg px-3.5 py-2 bg-zinc-900/60 border border-cyan-500/30 text-cyan-300/80 italic text-xs flex items-center gap-2">
+            <div className="max-w-[88%] sm:max-w-[85%] rounded-lg px-3 py-2 bg-zinc-900/60 border border-cyan-500/30 text-cyan-300/80 italic text-xs flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping shrink-0" />
               Processing request...
             </div>

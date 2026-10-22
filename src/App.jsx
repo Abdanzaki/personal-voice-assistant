@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { ASSISTANT_NAME } from './config.js'
 import { useSpeechRecognition } from './hooks/useSpeechRecognition.js'
 import { useSpeechSynthesis } from './hooks/useSpeechSynthesis.js'
-import { routeCommand } from './lib/commandRouter.js'
+import { routeCommand, extractWakeCommand } from './lib/commandRouter.js'
 import { fetchWikipediaSummary, fetchWeather } from './lib/services.js'
 import { sendChatMessage } from './lib/chatService.js'
 import { Orb } from './components/Orb.jsx'
@@ -14,12 +14,19 @@ export default function App() {
   const [messages, setMessages] = useState([])
   const [thinking, setThinking] = useState(false)
   const [aiOffline, setAiOffline] = useState(false)
+  const [wakeWordMode, setWakeWordMode] = useState(false)
+
   const { speak, cancel, speaking, supported: ttsSupported } = useSpeechSynthesis()
 
   const speakingRef = useRef(speaking)
   useEffect(() => {
     speakingRef.current = speaking
   }, [speaking])
+
+  const wakeWordModeRef = useRef(wakeWordMode)
+  useEffect(() => {
+    wakeWordModeRef.current = wakeWordMode
+  }, [wakeWordMode])
 
   // Track last spoken assistant reply for 'repeat' command
   const lastReplyRef = useRef('')
@@ -199,8 +206,49 @@ export default function App() {
     onFinalResult: (finalText) => {
       // Avoid processing speech recognition if assistant is actively speaking its own reply
       if (speakingRef.current) return
-      if (finalText && finalText.trim()) {
-        handleCommand(finalText)
+      const trimmed = (finalText || '').trim()
+      if (!trimmed) return
+
+      // Wake-word mode check
+      if (wakeWordModeRef.current) {
+        const { woke, command } = extractWakeCommand(trimmed, ASSISTANT_NAME)
+        if (!woke) {
+          // Non-wake utterances in wake mode are ignored
+          resetTranscript()
+          return
+        }
+
+        // Utterance contained wake word
+        if (!command) {
+          // User just said the wake word ('Jarvis') -> reply + speak acknowledgment
+          const timeStr = new Date().toLocaleTimeString([], {
+            hour: 'numeric',
+            minute: '2-digit',
+          })
+          const ackReply = "Yes? I'm listening."
+          const userMessage = {
+            sender: 'user',
+            text: trimmed,
+            time: timeStr,
+          }
+          const assistantMessage = {
+            sender: 'assistant',
+            text: ackReply,
+            time: timeStr,
+          }
+          setMessages((prev) => [...prev, userMessage, assistantMessage])
+          lastReplyRef.current = ackReply
+          speak(ackReply)
+          resetTranscript()
+          return
+        }
+
+        // Extracted command is routed as usual
+        handleCommand(command)
+        resetTranscript()
+      } else {
+        // When OFF: every final transcript is treated as a command
+        handleCommand(trimmed)
         resetTranscript()
       }
     },
@@ -226,6 +274,24 @@ export default function App() {
     }
   }
 
+  const handleToggleWakeWord = () => {
+    setWakeWordMode((prev) => {
+      const next = !prev
+      if (next && !listening && recognitionSupported) {
+        startListening()
+      }
+      return next
+    })
+  }
+
+  const handleStopSpeaking = () => {
+    if (speaking) {
+      cancel()
+    }
+    setThinking(false)
+  }
+
+  // Typed input always works as a direct command regardless of wake-word toggle
   const handleSendCommand = (text) => {
     if (speaking) {
       cancel()
@@ -238,10 +304,18 @@ export default function App() {
     resetTranscript()
   }
 
+  const statusLabel = speaking
+    ? 'Speaking'
+    : thinking
+    ? 'Thinking'
+    : listening
+    ? 'Listening'
+    : 'Idle'
+
   return (
     <div className="min-h-screen bg-[#090b0e] text-zinc-100 flex flex-col font-sans selection:bg-cyan-500/30">
       {/* Header */}
-      <header className="border-b border-zinc-800/80 bg-zinc-950/60 backdrop-blur px-4 sm:px-8 py-3.5 flex items-center justify-between shrink-0">
+      <header className="border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur px-4 sm:px-8 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-cyan-500/40 flex items-center justify-center shadow-[0_0_12px_rgba(6,182,212,0.2)]">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
@@ -250,7 +324,7 @@ export default function App() {
             <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
               {ASSISTANT_NAME}
               <span className="text-[10px] font-mono uppercase bg-zinc-800 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-500/20">
-                Phase 3
+                Phase 4
               </span>
             </h1>
             <p className="text-[11px] text-zinc-400">Personal Voice Assistant</p>
@@ -258,7 +332,7 @@ export default function App() {
         </div>
 
         {/* Status indicators */}
-        <div className="flex items-center gap-2 sm:gap-4 text-xs font-mono">
+        <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono">
           {aiOffline && (
             <div
               className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-mono"
@@ -269,46 +343,42 @@ export default function App() {
             </div>
           )}
 
-          <div className="hidden sm:flex items-center gap-1.5 text-zinc-400">
+          {/* Assistant Status Badge (Listening / Idle / Speaking / Thinking) */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-300">
             <span
               className={`w-2 h-2 rounded-full ${
-                recognitionSupported ? (listening ? 'bg-cyan-400 animate-pulse' : 'bg-emerald-500') : 'bg-zinc-600'
+                speaking
+                  ? 'bg-cyan-300 animate-bounce'
+                  : thinking
+                  ? 'bg-cyan-400 animate-ping'
+                  : listening
+                  ? 'bg-cyan-400 animate-pulse'
+                  : 'bg-zinc-500'
               }`}
             />
-            <span className="text-[11px]">
-              {recognitionSupported ? (listening ? 'Mic Active' : 'Mic Ready') : 'Mic Unsupported'}
-            </span>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-1.5 text-zinc-400">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                ttsSupported ? (speaking ? 'bg-cyan-400 animate-pulse' : 'bg-emerald-500') : 'bg-zinc-600'
-              }`}
-            />
-            <span className="text-[11px]">
-              {ttsSupported ? (speaking ? 'Speaking' : 'TTS Ready') : 'TTS Unsupported'}
-            </span>
+            <span className="text-[11px] font-medium">{statusLabel}</span>
           </div>
         </div>
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-4 min-h-0">
+      <main className="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-6 flex flex-col gap-4 min-h-0">
         {/* Unsupported browser alert if SpeechRecognition is missing */}
         <BrowserNotice supported={recognitionSupported} />
 
         {/* Content Area: Grid on larger screens, column on mobile */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0 items-stretch">
-          {/* Left Column: Central Animated Orb & Voice Control */}
-          <div className="lg:col-span-5 bg-zinc-950/40 border border-zinc-800/80 rounded-xl p-6 flex flex-col items-center justify-between shrink-0 shadow-lg">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 flex-1 min-h-0 items-stretch">
+          {/* Left Column: Central Animated Orb & Voice Info */}
+          <div className="lg:col-span-5 bg-zinc-950/40 border border-zinc-800/80 rounded-xl p-4 sm:p-6 flex flex-col items-center justify-between shrink-0 shadow-lg">
             <div className="w-full text-center">
               <span className="text-[11px] font-mono tracking-wider uppercase text-zinc-400">
-                Neural Interface
+                Voice Interface
               </span>
               <p className="text-xs text-zinc-400 mt-1">
                 {listening
-                  ? 'Listening for voice commands...'
+                  ? wakeWordMode
+                    ? `Say "${ASSISTANT_NAME}" followed by a command...`
+                    : 'Listening for voice commands...'
                   : speaking
                   ? 'Generating voice response...'
                   : thinking
@@ -318,23 +388,25 @@ export default function App() {
             </div>
 
             {/* Central Animated Orb */}
-            <div className="my-auto py-4">
+            <div className="my-auto py-2 sm:py-4">
               <Orb state={orbState} onClick={handleToggleListening} />
             </div>
 
-            {/* Quick Hints */}
-            <div className="w-full text-center">
+            {/* Quick Hints & Mode indicator */}
+            <div className="w-full text-center pt-2 border-t border-zinc-900">
               <p className="text-[11px] text-zinc-400 font-mono">
                 Wake Word: <span className="text-cyan-400 font-semibold">{`"${ASSISTANT_NAME}"`}</span>
-              </p>
-              <p className="text-[10px] text-zinc-400 mt-0.5">
-                Try &quot;Weather in Paris&quot;, &quot;Calculate 12 * 8&quot;, or &quot;Who was Albert Einstein&quot;
+                {wakeWordMode && (
+                  <span className="ml-2 text-[10px] text-cyan-400 bg-cyan-950/60 border border-cyan-500/30 px-1.5 py-0.5 rounded font-mono">
+                    Filter Active
+                  </span>
+                )}
               </p>
             </div>
           </div>
 
           {/* Right Column: Live Transcript & Inputs */}
-          <div className="lg:col-span-7 flex flex-col gap-3 min-h-[420px] lg:min-h-0">
+          <div className="lg:col-span-7 flex flex-col gap-3 min-h-[380px] lg:min-h-0">
             {/* Live Conversation Transcript */}
             <Transcript
               messages={messages}
@@ -343,13 +415,17 @@ export default function App() {
               onClear={handleClearTranscript}
             />
 
-            {/* Controls (Mic button, text input fallback, command chips) */}
+            {/* Controls (Mic button, stop-speaking button, wake-word toggle, text input fallback, chips) */}
             <div className="bg-zinc-950/40 border border-zinc-800/80 rounded-xl p-3 shrink-0 shadow-lg">
               <Controls
                 listening={listening}
                 onToggleListening={handleToggleListening}
                 recognitionSupported={recognitionSupported}
                 onSendCommand={handleSendCommand}
+                wakeWordMode={wakeWordMode}
+                onToggleWakeWord={handleToggleWakeWord}
+                speaking={speaking}
+                onStopSpeaking={handleStopSpeaking}
               />
             </div>
           </div>
@@ -357,8 +433,8 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-800/60 px-4 py-2.5 text-center text-[11px] text-zinc-400 font-mono shrink-0">
-        Jarvis Web Assistant • Phase 3 • Voice & Neural AI Fallback
+      <footer className="border-t border-zinc-800/60 px-4 py-2 text-center text-[11px] text-zinc-400 font-mono shrink-0">
+        Try: weather in Hyderabad · open YouTube · tell me a joke
       </footer>
     </div>
   )

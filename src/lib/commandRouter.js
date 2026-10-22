@@ -1,5 +1,8 @@
 import { ASSISTANT_NAME } from '../config.js'
 import { evaluateExpression, tokenize } from './calculator.js'
+import { extractWakeCommand } from './wakeWord.js'
+
+export { extractWakeCommand }
 
 export const JOKES = [
   'Why do programmers prefer dark mode? Because light attracts bugs!',
@@ -66,6 +69,12 @@ export function routeCommand(transcript) {
   const wakeMatch = strippedRaw.match(wakePrefixRegex)
   if (wakeMatch) {
     strippedRaw = strippedRaw.slice(wakeMatch[0].length).trim()
+  } else {
+    // Strip conversational greeting prefix if followed by command words
+    const salutationMatch = strippedRaw.match(/^(?:hey|hello|hi|ok|okay)[,:\s]+(?=[a-zA-Z0-9])/i)
+    if (salutationMatch && strippedRaw.length > salutationMatch[0].length) {
+      strippedRaw = strippedRaw.slice(salutationMatch[0].length).trim()
+    }
   }
 
   const normalizedFull = normalizeText(transcript)
