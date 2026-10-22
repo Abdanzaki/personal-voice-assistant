@@ -4,6 +4,7 @@ import { useSpeechRecognition } from './hooks/useSpeechRecognition.js'
 import { useSpeechSynthesis } from './hooks/useSpeechSynthesis.js'
 import { routeCommand } from './lib/commandRouter.js'
 import { fetchWikipediaSummary, fetchWeather } from './lib/services.js'
+import { sendChatMessage } from './lib/chatService.js'
 import { Orb } from './components/Orb.jsx'
 import { Transcript } from './components/Transcript.jsx'
 import { Controls } from './components/Controls.jsx'
@@ -12,6 +13,7 @@ import { BrowserNotice } from './components/BrowserNotice.jsx'
 export default function App() {
   const [messages, setMessages] = useState([])
   const [thinking, setThinking] = useState(false)
+  const [aiOffline, setAiOffline] = useState(false)
   const { speak, cancel, speaking, supported: ttsSupported } = useSpeechSynthesis()
 
   const speakingRef = useRef(speaking)
@@ -107,7 +109,58 @@ export default function App() {
         return
       }
 
-      // 6. Synchronous replies (greeting, time, date, joke, name, open-url, calculate/calculator, unknown)
+      // 6. Action: unknown -> Fallback to FastAPI Backend AI endpoint
+      if (action?.type === 'unknown') {
+        setMessages((prev) => [...prev, userMessage])
+        setThinking(true)
+
+        try {
+          const data = await sendChatMessage(trimmed)
+          const completionTime = new Date().toLocaleTimeString([], {
+            hour: 'numeric',
+            minute: '2-digit',
+          })
+
+          const assistantMessage = {
+            sender: 'assistant',
+            text: data.reply,
+            time: completionTime,
+          }
+
+          setMessages((prev) => [...prev, assistantMessage])
+          lastReplyRef.current = data.reply
+          speak(data.reply)
+
+          if (data.ai_configured === false) {
+            setAiOffline(true)
+          } else {
+            setAiOffline(false)
+          }
+        } catch {
+          const offlineMsg =
+            "I can't reach my AI brain right now — check that the backend is running."
+          const completionTime = new Date().toLocaleTimeString([], {
+            hour: 'numeric',
+            minute: '2-digit',
+          })
+
+          const assistantMessage = {
+            sender: 'assistant',
+            text: offlineMsg,
+            time: completionTime,
+          }
+
+          setMessages((prev) => [...prev, assistantMessage])
+          lastReplyRef.current = offlineMsg
+          speak(offlineMsg)
+          setAiOffline(true)
+        } finally {
+          setThinking(false)
+        }
+        return
+      }
+
+      // 7. Synchronous replies (greeting, time, date, joke, name, open-url, calculate/calculator)
       const replyText =
         reply !== null
           ? reply
@@ -197,7 +250,7 @@ export default function App() {
             <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
               {ASSISTANT_NAME}
               <span className="text-[10px] font-mono uppercase bg-zinc-800 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-500/20">
-                Phase 2
+                Phase 3
               </span>
             </h1>
             <p className="text-[11px] text-zinc-400">Personal Voice Assistant</p>
@@ -206,6 +259,16 @@ export default function App() {
 
         {/* Status indicators */}
         <div className="flex items-center gap-2 sm:gap-4 text-xs font-mono">
+          {aiOffline && (
+            <div
+              className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-mono"
+              title="AI brain offline or not configured"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <span>AI brain offline</span>
+            </div>
+          )}
+
           <div className="hidden sm:flex items-center gap-1.5 text-zinc-400">
             <span
               className={`w-2 h-2 rounded-full ${
@@ -295,7 +358,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="border-t border-zinc-800/60 px-4 py-2.5 text-center text-[11px] text-zinc-400 font-mono shrink-0">
-        Jarvis Web Assistant • Phase 2 • Voice & Web Intelligence
+        Jarvis Web Assistant • Phase 3 • Voice & Neural AI Fallback
       </footer>
     </div>
   )
