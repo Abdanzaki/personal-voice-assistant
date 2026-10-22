@@ -3,6 +3,7 @@ import { ASSISTANT_NAME } from './config.js'
 import { useSpeechRecognition } from './hooks/useSpeechRecognition.js'
 import { useSpeechSynthesis } from './hooks/useSpeechSynthesis.js'
 import { routeCommand } from './lib/commandRouter.js'
+import { fetchWikipediaSummary, fetchWeather } from './lib/services.js'
 import { Orb } from './components/Orb.jsx'
 import { Transcript } from './components/Transcript.jsx'
 import { Controls } from './components/Controls.jsx'
@@ -10,6 +11,7 @@ import { BrowserNotice } from './components/BrowserNotice.jsx'
 
 export default function App() {
   const [messages, setMessages] = useState([])
+  const [thinking, setThinking] = useState(false)
   const { speak, cancel, speaking, supported: ttsSupported } = useSpeechSynthesis()
 
   const speakingRef = useRef(speaking)
@@ -17,9 +19,12 @@ export default function App() {
     speakingRef.current = speaking
   }, [speaking])
 
+  // Track last spoken assistant reply for 'repeat' command
+  const lastReplyRef = useRef('')
+
   // Process command pipeline (used for both voice and typed commands)
   const handleCommand = useCallback(
-    (input) => {
+    async (input) => {
       const trimmed = (input || '').trim()
       if (!trimmed) return
 
@@ -37,11 +42,75 @@ export default function App() {
 
       // 2. Route command through pure router
       const result = routeCommand(trimmed)
+      const { reply, action } = result
 
-      // 3. Resolve reply text (fallback to polite response if null)
+      // 3. Action: stop-speaking -> cancel speech synthesis (and do not speak anything new)
+      if (action?.type === 'stop-speaking') {
+        cancel()
+        setThinking(false)
+        setMessages((prev) => [...prev, userMessage])
+        return
+      }
+
+      // 4. Action: repeat -> re-speak the last assistant reply (tracked in ref)
+      if (action?.type === 'repeat') {
+        const textToRepeat = lastReplyRef.current || "I haven't said anything yet."
+        const assistantMessage = {
+          sender: 'assistant',
+          text: textToRepeat,
+          time: timeStr,
+        }
+        setMessages((prev) => [...prev, userMessage, assistantMessage])
+        speak(textToRepeat)
+        return
+      }
+
+      // 5. Action: wikipedia or weather (async external services)
+      if (action?.type === 'wikipedia' || action?.type === 'weather') {
+        // Append user's transcript line and activate thinking/loading indicator
+        setMessages((prev) => [...prev, userMessage])
+        setThinking(true)
+
+        try {
+          const responseText =
+            action.type === 'weather'
+              ? await fetchWeather(action.city)
+              : await fetchWikipediaSummary(action.query)
+
+          const completionTime = new Date().toLocaleTimeString([], {
+            hour: 'numeric',
+            minute: '2-digit',
+          })
+
+          const assistantMessage = {
+            sender: 'assistant',
+            text: responseText,
+            time: completionTime,
+          }
+
+          setMessages((prev) => [...prev, assistantMessage])
+          lastReplyRef.current = responseText
+          speak(responseText)
+        } catch {
+          const errorMsg = 'Sorry, I encountered an issue retrieving that information.'
+          const assistantMessage = {
+            sender: 'assistant',
+            text: errorMsg,
+            time: timeStr,
+          }
+          setMessages((prev) => [...prev, assistantMessage])
+          lastReplyRef.current = errorMsg
+          speak(errorMsg)
+        } finally {
+          setThinking(false)
+        }
+        return
+      }
+
+      // 6. Synchronous replies (greeting, time, date, joke, name, open-url, calculate/calculator, unknown)
       const replyText =
-        result.reply !== null
-          ? result.reply
+        reply !== null
+          ? reply
           : `I don't know that one yet, but I'm ready to help with the time, date, a joke, or greetings.`
 
       const assistantMessage = {
@@ -50,13 +119,19 @@ export default function App() {
         time: timeStr,
       }
 
-      // 4. Update transcript state with both messages
       setMessages((prev) => [...prev, userMessage, assistantMessage])
 
-      // 5. Speak reply via Speech Synthesis
+      lastReplyRef.current = replyText
       speak(replyText)
+
+      // Action: open-url
+      if (action?.type === 'open-url' && action.url) {
+        if (typeof window !== 'undefined' && window.open) {
+          window.open(action.url, '_blank', 'noopener')
+        }
+      }
     },
-    [speak]
+    [cancel, speak]
   )
 
   // Voice recognition hook
@@ -78,8 +153,14 @@ export default function App() {
     },
   })
 
-  // Determine central orb state: 'speaking' | 'listening' | 'idle'
-  const orbState = speaking ? 'speaking' : listening ? 'listening' : 'idle'
+  // Determine central orb state: 'speaking' | 'thinking' | 'listening' | 'idle'
+  const orbState = speaking
+    ? 'speaking'
+    : thinking
+    ? 'thinking'
+    : listening
+    ? 'listening'
+    : 'idle'
 
   const handleToggleListening = () => {
     if (speaking) {
@@ -116,7 +197,7 @@ export default function App() {
             <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
               {ASSISTANT_NAME}
               <span className="text-[10px] font-mono uppercase bg-zinc-800 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-500/20">
-                Phase 1
+                Phase 2
               </span>
             </h1>
             <p className="text-[11px] text-zinc-400">Personal Voice Assistant</p>
@@ -167,6 +248,8 @@ export default function App() {
                   ? 'Listening for voice commands...'
                   : speaking
                   ? 'Generating voice response...'
+                  : thinking
+                  ? 'Accessing neural network...'
                   : 'Click orb or mic to activate voice'}
               </p>
             </div>
@@ -182,7 +265,7 @@ export default function App() {
                 Wake Word: <span className="text-cyan-400 font-semibold">{`"${ASSISTANT_NAME}"`}</span>
               </p>
               <p className="text-[10px] text-zinc-400 mt-0.5">
-                Try &quot;Hey Jarvis, what time is it?&quot; or &quot;Tell me a joke&quot;
+                Try &quot;Weather in Paris&quot;, &quot;Calculate 12 * 8&quot;, or &quot;Who was Albert Einstein&quot;
               </p>
             </div>
           </div>
@@ -193,6 +276,7 @@ export default function App() {
             <Transcript
               messages={messages}
               interimText={interimTranscript}
+              thinking={thinking}
               onClear={handleClearTranscript}
             />
 
@@ -211,7 +295,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="border-t border-zinc-800/60 px-4 py-2.5 text-center text-[11px] text-zinc-400 font-mono shrink-0">
-        Jarvis Web Assistant • Phase 1 Foundation • Client-Side Voice Engine
+        Jarvis Web Assistant • Phase 2 • Voice & Web Intelligence
       </footer>
     </div>
   )

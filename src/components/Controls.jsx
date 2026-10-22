@@ -25,10 +25,12 @@ export function Controls({
 
   const sampleCommands = [
     'What time is it?',
-    "Today's date",
+    'Weather in Hyderabad',
+    'Calculate 12 times 8',
+    'Who is Albert Einstein',
+    'Open YouTube',
+    'Google web development',
     'Tell me a joke',
-    'Who are you?',
-    'Hey Jarvis',
   ]
 
   return (
@@ -110,7 +112,7 @@ export function Controls({
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Type a command (e.g. 'what time is it')..."
+            placeholder="Type a command (e.g. 'weather in Tokyo', '12 * 8')..."
             className="w-full bg-zinc-900 border border-zinc-800 text-zinc-100 placeholder-zinc-500 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
           />
         </div>
