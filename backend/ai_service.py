@@ -3,7 +3,7 @@ from google import genai
 from google.genai import types
 
 SYSTEM_INSTRUCTION = (
-    "You are Jarvis, a friendly voice assistant. Answer in at most 2-3 short sentences, "
+    "You are Captain, a friendly voice assistant. Answer in at most 2-3 short sentences, "
     "plain spoken language, no markdown, no lists, no code blocks — your answer will be read aloud."
 )
 

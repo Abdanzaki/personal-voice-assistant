@@ -220,7 +220,7 @@ export default function App() {
 
         // Utterance contained wake word
         if (!command) {
-          // User just said the wake word ('Jarvis') -> reply + speak acknowledgment
+          // User just said the wake word ('Captain') -> reply + speak acknowledgment
           const timeStr = new Date().toLocaleTimeString([], {
             hour: 'numeric',
             minute: '2-digit',

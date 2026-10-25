@@ -10,40 +10,40 @@ describe('extractWakeCommand', () => {
   })
 
   describe('wake at start', () => {
-    it("extracts command when wake word is at start with comma ('Jarvis, what is the time')", () => {
-      const res = extractWakeCommand('Jarvis, what is the time')
+    it("extracts command when wake word is at start with comma ('Captain, what is the time')", () => {
+      const res = extractWakeCommand('Captain, what is the time')
       expect(res).toEqual({ woke: true, command: 'what is the time' })
     })
 
-    it("extracts command when wake word is at start without comma ('Jarvis what is the date')", () => {
-      const res = extractWakeCommand('Jarvis what is the date')
+    it("extracts command when wake word is at start without comma ('Captain what is the date')", () => {
+      const res = extractWakeCommand('Captain what is the date')
       expect(res).toEqual({ woke: true, command: 'what is the date' })
     })
 
-    it("extracts command with colon ('Jarvis: open YouTube')", () => {
-      const res = extractWakeCommand('Jarvis: open YouTube')
+    it("extracts command with colon ('Captain: open YouTube')", () => {
+      const res = extractWakeCommand('Captain: open YouTube')
       expect(res).toEqual({ woke: true, command: 'open YouTube' })
     })
   })
 
   describe('wake at middle or end', () => {
-    it("extracts command when wake word is in the middle ('tell me, Jarvis, what is the time')", () => {
-      const res = extractWakeCommand('tell me, Jarvis, what is the time')
+    it("extracts command when wake word is in the middle ('tell me, Captain, what is the time')", () => {
+      const res = extractWakeCommand('tell me, Captain, what is the time')
       expect(res).toEqual({ woke: true, command: 'tell me what is the time' })
     })
 
-    it("extracts command when wake word is in the middle without commas ('please Jarvis open github')", () => {
-      const res = extractWakeCommand('please Jarvis open github')
+    it("extracts command when wake word is in the middle without commas ('please Captain open github')", () => {
+      const res = extractWakeCommand('please Captain open github')
       expect(res).toEqual({ woke: true, command: 'please open github' })
     })
 
-    it("extracts command when wake word is at the end ('what is the time, Jarvis?')", () => {
-      const res = extractWakeCommand('what is the time, Jarvis?')
+    it("extracts command when wake word is at the end ('what is the time, Captain?')", () => {
+      const res = extractWakeCommand('what is the time, Captain?')
       expect(res).toEqual({ woke: true, command: 'what is the time' })
     })
 
-    it("extracts command when wake word is at the end without punctuation ('tell me a joke Jarvis')", () => {
-      const res = extractWakeCommand('tell me a joke Jarvis')
+    it("extracts command when wake word is at the end without punctuation ('tell me a joke Captain')", () => {
+      const res = extractWakeCommand('tell me a joke Captain')
       expect(res).toEqual({ woke: true, command: 'tell me a joke' })
     })
   })
@@ -61,47 +61,47 @@ describe('extractWakeCommand', () => {
       expect(res.command).toBe('')
     })
 
-    it("does not trigger on substrings of other words ('Jarvisian hypothesis')", () => {
-      const res = extractWakeCommand('Jarvisian hypothesis')
+    it("does not trigger on substrings of other words ('Captainian hypothesis')", () => {
+      const res = extractWakeCommand('Captainian hypothesis')
       expect(res.woke).toBe(false)
     })
   })
 
   describe('bare wake word', () => {
-    it("returns woke: true and empty command for bare wake word ('Jarvis')", () => {
-      const res = extractWakeCommand('Jarvis')
+    it("returns woke: true and empty command for bare wake word ('Captain')", () => {
+      const res = extractWakeCommand('Captain')
       expect(res).toEqual({ woke: true, command: '' })
     })
 
-    it("returns woke: true and empty command with leading/trailing whitespace ('   Jarvis   ')", () => {
-      const res = extractWakeCommand('   Jarvis   ')
+    it("returns woke: true and empty command with leading/trailing whitespace ('   Captain   ')", () => {
+      const res = extractWakeCommand('   Captain   ')
       expect(res).toEqual({ woke: true, command: '' })
     })
 
-    it("returns woke: true and empty command with exclamation mark ('Jarvis!')", () => {
-      const res = extractWakeCommand('Jarvis!')
+    it("returns woke: true and empty command with exclamation mark ('Captain!')", () => {
+      const res = extractWakeCommand('Captain!')
       expect(res).toEqual({ woke: true, command: '' })
     })
 
-    it("returns woke: true and empty command with dots ('...jarvis...')", () => {
-      const res = extractWakeCommand('...jarvis...')
+    it("returns woke: true and empty command with dots ('...captain...')", () => {
+      const res = extractWakeCommand('...captain...')
       expect(res).toEqual({ woke: true, command: '' })
     })
   })
 
   describe('case and punctuation variants', () => {
-    it("handles lowercase wake word ('jarvis, tell me a joke')", () => {
-      const res = extractWakeCommand('jarvis, tell me a joke')
+    it("handles lowercase wake word ('captain, tell me a joke')", () => {
+      const res = extractWakeCommand('captain, tell me a joke')
       expect(res).toEqual({ woke: true, command: 'tell me a joke' })
     })
 
-    it("handles all-caps wake word ('JARVIS: what is 12 times 8')", () => {
-      const res = extractWakeCommand('JARVIS: what is 12 times 8')
+    it("handles all-caps wake word ('CAPTAIN: what is 12 times 8')", () => {
+      const res = extractWakeCommand('CAPTAIN: what is 12 times 8')
       expect(res).toEqual({ woke: true, command: 'what is 12 times 8' })
     })
 
-    it("handles mixed case ('JaRvIs, weather in Paris')", () => {
-      const res = extractWakeCommand('JaRvIs, weather in Paris')
+    it("handles mixed case ('CaPtAiN, weather in Paris')", () => {
+      const res = extractWakeCommand('CaPtAiN, weather in Paris')
       expect(res).toEqual({ woke: true, command: 'weather in Paris' })
     })
   })
@@ -124,8 +124,8 @@ describe('extractWakeCommand', () => {
     })
 
     it('handles missing or empty wake word safely', () => {
-      expect(extractWakeCommand('Jarvis', '')).toEqual({ woke: false, command: '' })
-      expect(extractWakeCommand('Jarvis', null)).toEqual({ woke: false, command: '' })
+      expect(extractWakeCommand('Captain', '')).toEqual({ woke: false, command: '' })
+      expect(extractWakeCommand('Captain', null)).toEqual({ woke: false, command: '' })
     })
   })
 })

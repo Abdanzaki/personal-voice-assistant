@@ -1,12 +1,12 @@
-# Jarvis — Personal Voice Assistant
+# Captain — Personal Voice Assistant
 
-Jarvis is a Siri/Alexa-style voice assistant that runs right in your browser. Built with React and Tailwind CSS on the frontend and an optional FastAPI AI fallback backend, Jarvis combines zero-latency local speech recognition and command routing with external knowledge APIs and neural AI fallback.
+Captain is a Siri/Alexa-style voice assistant that runs right in your browser. Built with React and Tailwind CSS on the frontend and an optional FastAPI AI fallback backend, Captain combines zero-latency local speech recognition and command routing with external knowledge APIs and neural AI fallback.
 
 ---
 
 ## Features
 
-- **Wake-Word Mode**: Say *"Jarvis"* anywhere in your utterance (e.g., *"Jarvis, what is the time"*, or bare *"Jarvis"* to wake the assistant). Toggleable switch with continuous listening loop protection.
+- **Wake-Word Mode**: Say *"Captain"* anywhere in your utterance (e.g., *"Captain, what is the time"*, or bare *"Captain"* to wake the assistant). Toggleable switch with continuous listening loop protection.
 - **Local Command Router**: Instant client-side intent recognition for device queries with zero network delay (time, date, jokes, assistant identity, voice playback control like stop and repeat).
 - **Calculator**: Safe custom tokenizer and recursive descent expression evaluator supporting symbols (`12 * 8`), spoken math phrases (*"four plus five"*, *"multiplied by"*, *"divided by"*), floating-point noise elimination (`0.1 + 0.2 = 0.3`), and division-by-zero guard without using `eval()`.
 - **Wikipedia Knowledge**: Direct MediaWiki REST integration to fetch concise, clean introductory summaries for figures, science, and history topics (*"Who was Albert Einstein"*, *"Tell me about Mars"*).
@@ -126,8 +126,8 @@ PYTHONPATH=.. uvicorn main:app --reload --port 8000
 
 | Category | Example Utterance | Result / Action |
 | :--- | :--- | :--- |
-| **Wake Word** | *"Jarvis"* | Acknowledges *"Yes? I'm listening."* |
-| **Wake + Command** | *"Jarvis, what is the time?"* | Extracts command and speaks current time |
+| **Wake Word** | *"Captain"* | Acknowledges *"Yes? I'm listening."* |
+| **Wake + Command** | *"Captain, what is the time?"* | Extracts command and speaks current time |
 | **Time & Date** | *"What time is it?"* / *"Today's date"* | Current local time / formatted date |
 | **Weather** | *"Weather in Hyderabad"* / *"Weather in Paris"* | Current temperature, skies, humidity, wind |
 | **Calculator** | *"Calculate 12 * 8"* / *"4 plus 5"* | Evaluates arithmetic expression safely |
@@ -201,7 +201,7 @@ personal-voice-assistant/
 │   │   ├── services.js             # Wikipedia MediaWiki & Open-Meteo weather fetchers
 │   │   └── wakeWord.js             # extractWakeCommand pure helper function
 │   ├── App.jsx                     # Main assistant shell, pipeline & layout
-│   ├── config.js                   # Assistant settings (ASSISTANT_NAME = 'Jarvis')
+│   ├── config.js                   # Assistant settings (ASSISTANT_NAME = 'Captain')
 │   ├── index.css                   # Tailwind CSS imports & animations
 │   └── main.jsx                    # React entrypoint
 ├── package.json

@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react'
 import { ASSISTANT_NAME } from '../config.js'
 
 /**
- * Renders the live conversation transcript with speaker labels (You / Jarvis)
+ * Renders the live conversation transcript with speaker labels (You / Captain)
  * and auto-scrolls to the newest message. Supports interim speech and thinking indicator.
  */
 export function Transcript({

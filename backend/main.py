@@ -28,8 +28,8 @@ def get_cors_origins() -> list[str]:
 
 
 app = FastAPI(
-    title="Jarvis Voice Assistant Backend",
-    description="Backend API with AI fallback for Jarvis Voice Assistant",
+    title="Captain Voice Assistant Backend",
+    description="Backend API with AI fallback for Captain Voice Assistant",
     version="1.0.0",
 )
 

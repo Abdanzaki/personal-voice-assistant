@@ -1,5 +1,5 @@
 /**
- * Service to communicate with the Jarvis FastAPI backend AI fallback endpoint.
+ * Service to communicate with the Captain FastAPI backend AI fallback endpoint.
  */
 
 export const DEFAULT_API_BASE_URL = 'http://localhost:8000'

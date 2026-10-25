@@ -73,8 +73,8 @@ describe('commandRouter', () => {
       expect(result.reply).toContain(ASSISTANT_NAME)
     })
 
-    it("routes 'hey jarvis' to greeting command", () => {
-      const result = routeCommand('hey jarvis')
+    it("routes 'hey captain' to greeting command", () => {
+      const result = routeCommand('hey captain')
       expect(result.action.type).toBe('greeting')
     })
 
@@ -144,7 +144,7 @@ describe('commandRouter', () => {
     })
 
     it('works with wake word prefix', () => {
-      const result = routeCommand('hey jarvis open github')
+      const result = routeCommand('hey captain open github')
       expect(result.action).toEqual({ type: 'open-url', url: 'https://github.com' })
       expect(result.reply).toBe('Opening GitHub')
     })
@@ -179,7 +179,7 @@ describe('commandRouter', () => {
     })
 
     it('strips wake words before searching', () => {
-      const result = routeCommand('Jarvis google quantum supremacy')
+      const result = routeCommand('Captain google quantum supremacy')
       expect(result.action.url).toBe(
         'https://www.google.com/search?q=quantum%20supremacy'
       )
@@ -396,11 +396,11 @@ describe('commandRouter', () => {
     )
 
     it('works with wake word prefix for controls', () => {
-      const res1 = routeCommand('Jarvis stop')
+      const res1 = routeCommand('Captain stop')
       expect(res1.action).toEqual({ type: 'stop-speaking' })
       expect(res1.reply).toBeNull()
 
-      const res2 = routeCommand('hey jarvis repeat that')
+      const res2 = routeCommand('hey captain repeat that')
       expect(res2.action).toEqual({ type: 'repeat' })
       expect(res2.reply).toBeNull()
     })
